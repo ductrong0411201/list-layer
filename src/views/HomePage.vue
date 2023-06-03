@@ -4,12 +4,16 @@
       <v-card-title>Layer Controls</v-card-title>
       <v-card-actions>
         <div class="btn-group">
-          <v-btn @click="addLayer">CREATE LAYER</v-btn>
+          <v-btn @click="addLayer()">CREATE LAYER</v-btn>
           <v-btn @click="addGroupLayer">NEW GROUP</v-btn>
         </div>
       </v-card-actions>
       <v-layout class="list-layers align-content-start flex-wrap">
-        <draggable v-model="layers" :options="dragOptions" style="width: 100%">
+        <draggable
+          v-model="list.list"
+          :options="dragOptions"
+          style="width: 100%"
+        >
           <transition-group>
             <v-layout
               :style="layer.isGroup ? 'height: 120px' : 'height: 80px'"
@@ -20,10 +24,10 @@
             >
               <v-layout v-if="layer.isLayer">
                 <div class="drag-handle d-flex justify-center">
-                  <v-icon x-small>mdi-arrow-up-down</v-icon>
+                  <v-icon small>mdi-arrow-up-down</v-icon>
                 </div>
                 <div class="contents flex-grow-1">
-                  <div class="name">{{ layer.name }}</div>
+                  <h4 class="name">{{ layer.name }}</h4>
                   <div class="name">{{ layer.type }}</div>
                   <div class="name">{{ layer.source_layer }}</div>
                 </div>
@@ -40,13 +44,37 @@
                 </div>
               </v-layout>
               <v-layout v-if="layer.isGroup">
-                <div class="drag-handle d-flex justify-center">
-                  <v-icon x-small>mdi-arrow-up-down</v-icon>
+                <div
+                  class="drag-handle d-flex justify-center"
+                  style="background-color: blue"
+                >
+                  <v-icon small>mdi-arrow-up-down</v-icon>
                 </div>
                 <div class="contents flex-grow-1">
-                  <div class="name">{{ layer.name }}</div>
+                  <h4 class="name">{{ layer.name }}</h4>
+                  <draggable v-model="layer.layers" :options="dragOptions">
+                    <transition-group
+                      ><v-layout
+                        class="layer-group elevation-1"
+                        v-for="(item, index) in layer.layers"
+                        :key="index"
+                        style="margin: 8px 10px 8px 0"
+                      >
+                        <div class="drag-handle d-flex justify-center">
+                          <v-icon x-small>mdi-arrow-up-down</v-icon>
+                        </div>
+                        <div class="contents flex-grow-1">
+                          <h4 class="name">{{ item.name }}</h4>
+                        </div>
+                      </v-layout>
+                    </transition-group></draggable
+                  >
                 </div>
+
                 <div class="control">
+                  <v-btn icon small class="btn-control" @click="addLayer(i)">
+                    <v-icon>mdi-plus</v-icon>
+                  </v-btn>
                   <v-btn
                     icon
                     small
@@ -114,16 +142,13 @@ export default {
   data: () => {
     return {
       showLayers: true,
-      layers: [
-        { name: "111", view: false },
-        { name: "222", view: false },
-      ],
       dragOptions: {
         handle: ".drag-handle",
       },
       renameGroup: false,
       groupName: "",
       index: null,
+      add_layer_to_group: false,
       data: [],
       dialog: false,
       list: undefined,
@@ -154,13 +179,24 @@ export default {
       );
       this.data = res.data.layers;
     },
-    addLayer() {
+    addLayer(i) {
+      if (i != undefined) {
+        this.index = i;
+        this.add_layer_to_group = true;
+      }
       this.dialog = true;
     },
     confirmAdd() {
-      const layer = new Layer(this.formAddLayer);
-      this.list.addLayerToList(layer);
+      if (this.add_layer_to_group) {
+        this.list.list[this.index].addLayerToGroup(
+          new Layer(this.formAddLayer)
+        );
+        this.add_layer_to_group = false;
+      } else {
+        this.list.addLayerToList(new Layer(this.formAddLayer));
+      }
       this.dialog = false;
+      this.index = null;
       this.formAddLayer = {
         name: "",
         type: "",
@@ -186,6 +222,7 @@ export default {
     confirmRename() {
       this.list.list[this.index].changeNameGroup(this.groupName);
       this.renameGroup = false;
+      this.index = null;
     },
   },
 };
@@ -206,5 +243,10 @@ export default {
   width: 80%;
   border-radius: 5px;
   background-color: bisque;
+}
+.layer-group {
+  margin: 0 auto;
+
+  background-color: white;
 }
 </style>

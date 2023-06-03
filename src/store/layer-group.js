@@ -7,7 +7,7 @@ class LayerGroup {
   changeNameGroup(name_group) {
     this.name = name_group;
   }
-  addLayer(layer) {
+  addLayerToGroup(layer) {
     this.layers.push(layer);
   }
   removeLayer(index) {
