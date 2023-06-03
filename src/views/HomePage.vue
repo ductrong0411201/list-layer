@@ -1,6 +1,6 @@
 <template>
   <div class="container">
-    <v-card style="overflow-y: scroll">
+    <v-card>
       <v-card-title>Layer Controls</v-card-title>
       <v-card-actions>
         <div class="btn-group">
@@ -8,82 +8,74 @@
           <v-btn @click="addGroupLayer">NEW GROUP</v-btn>
         </div>
       </v-card-actions>
-
       <v-layout class="list-layers align-content-start flex-wrap">
-        <draggable
-          v-model="layers"
-          :options="dragOptions"
-        >
+        <draggable v-model="layers" :options="dragOptions" style="width: 100%">
           <transition-group>
             <v-layout
+              :style="layer.isGroup ? 'height: 120px' : 'height: 80px'"
               class="layer elevation-1"
               v-for="(layer, i) in list.list"
               :key="i"
+              style="margin: 8px auto"
             >
-              <div class="drag-handle d-flex justify-center">
-                <v-icon x-small>mdi-arrow-up-down</v-icon>
-              </div>
-              <div class="contents flex-grow-1">
-                <div class="name">{{ layer.name }}</div>
-              </div>
-              <div class="control">
-                <v-btn
-                  v-if="layer.view"
-                  icon
-                  x-small
-                  class="btn-control"
-                  @click="removeLayerFromMap(layer, i)"
-                >
-                  <v-icon small>mdi-eye</v-icon>
-                </v-btn>
-                <!-- <v-tooltip bottom v-else>
-                <template v-slot:activator="{ attrs, on }"> -->
-                <v-btn
-                  v-else
-                  icon
-                  x-small
-                  class="btn-control"
-                  @click="addLayerToMap(layer, i)"
-                >
-                  <v-icon small>mdi-eye-off</v-icon>
-                </v-btn>
-                <!-- </template>
-                <span>hide layer</span>
-              </v-tooltip> -->
-                <v-btn icon x-small class="btn-control">
-                  <v-icon small>mdi-crosshairs-gps</v-icon>
-                </v-btn>
-                <v-menu offset-y>
-                  <template v-slot:activator="{ on, attrs }">
-                    <v-btn icon x-small v-bind="attrs" v-on="on">
-                      <v-icon small class="btn-control"
-                        >mdi-dots-vertical</v-icon
-                      >
-                    </v-btn>
-                  </template>
-                  <v-list>
-                    <v-list-item class="btn btn-list-item">
-                      <v-list-item-title @click="saveLayer(layer)">
-                        <v-icon small class="mr-2">mdi-download-outline</v-icon>
-                        <span style="font-size: 14px">Save aoi</span>
-                      </v-list-item-title>
-                    </v-list-item>
-                    <v-list-item class="btn btn-list-item">
-                      <v-list-item-title @click="removeLayer(i)">
-                        <v-icon small class="mr-2"
-                          >mdi-trash-can-outline</v-icon
-                        >
-                        <span style="font-size: 14px">Delete</span>
-                      </v-list-item-title>
-                    </v-list-item>
-                  </v-list>
-                </v-menu>
-              </div>
+              <v-layout v-if="layer.isLayer">
+                <div class="drag-handle d-flex justify-center">
+                  <v-icon x-small>mdi-arrow-up-down</v-icon>
+                </div>
+                <div class="contents flex-grow-1">
+                  <div class="name">{{ layer.name }}</div>
+                  <div class="name">{{ layer.type }}</div>
+                  <div class="name">{{ layer.source_layer }}</div>
+                </div>
+                <div class="control">
+                  <v-btn icon small class="btn-control">
+                    <v-icon>mdi-crosshairs-gps</v-icon>
+                  </v-btn>
+                  <v-btn icon small class="btn-control">
+                    <v-icon>mdi-pencil</v-icon>
+                  </v-btn>
+                  <v-btn icon @click="removeLayer(i)">
+                    <v-icon class="mr-2">mdi-trash-can-outline</v-icon>
+                  </v-btn>
+                </div>
+              </v-layout>
+              <v-layout v-if="layer.isGroup">
+                <div class="drag-handle d-flex justify-center">
+                  <v-icon x-small>mdi-arrow-up-down</v-icon>
+                </div>
+                <div class="contents flex-grow-1">
+                  <div class="name">{{ layer.name }}</div>
+                </div>
+                <div class="control">
+                  <v-btn
+                    icon
+                    small
+                    class="btn-control"
+                    @click="changeNameGroup(i)"
+                  >
+                    <v-icon>mdi-pencil</v-icon>
+                  </v-btn>
+                  <v-btn icon @click="removeLayer(i)">
+                    <v-icon class="mr-2">mdi-trash-can-outline</v-icon>
+                  </v-btn>
+                </div>
+              </v-layout>
             </v-layout>
           </transition-group>
         </draggable>
       </v-layout>
     </v-card>
+    <v-dialog v-model="renameGroup" width="50%">
+      <v-card>
+        <v-card-text>
+          <v-text-field v-model="groupName" placeholder="Enter new name">
+          </v-text-field>
+        </v-card-text>
+        <v-card-actions>
+          <v-btn @click="confirmRename">Add</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
     <v-dialog v-model="dialog" width="50%">
       <v-card>
         <v-card-title>Add Layer</v-card-title>
@@ -117,14 +109,22 @@ import draggable from "vuedraggable";
 import LayerList from "@/store/layer-list";
 import LayerGroup from "@/store/layer-group";
 import Layer from "@/store/layer";
+import axios from "axios";
 export default {
   data: () => {
     return {
       showLayers: true,
-      layers: [{ name: "111", view: false }, { name: "222", view: false }],
+      layers: [
+        { name: "111", view: false },
+        { name: "222", view: false },
+      ],
       dragOptions: {
-        handle: '.drag-handle'
+        handle: ".drag-handle",
       },
+      renameGroup: false,
+      groupName: "",
+      index: null,
+      data: [],
       dialog: false,
       list: undefined,
       type: ["fill", "line", "symbol"],
@@ -145,8 +145,15 @@ export default {
   },
   created() {
     this.list = new LayerList();
+    this.getData();
   },
   methods: {
+    async getData() {
+      const res = await axios.get(
+        "https://tiles.skymapglobal.vn/styles/basic/style.json"
+      );
+      this.data = res.data.layers;
+    },
     addLayer() {
       this.dialog = true;
     },
@@ -163,79 +170,41 @@ export default {
           fill_color: "",
         },
       };
+      console.log(this.list);
     },
     addGroupLayer() {
-      let form = {
-        name: "New Group",
-      };
-      const layerGroup = new LayerGroup(form);
+      const layerGroup = new LayerGroup();
       this.list.addLayerGroupToList(layerGroup);
+    },
+    removeLayer(i) {
+      this.list.remove(i);
+    },
+    changeNameGroup(i) {
+      this.renameGroup = true;
+      this.index = i;
+    },
+    confirmRename() {
+      this.list.list[this.index].changeNameGroup(this.groupName);
+      this.renameGroup = false;
     },
   },
 };
 </script>
-
 <style lang="scss" scoped>
 .container {
   width: 60%;
   margin: auto;
-  /* overflow-y: scroll; */
+  overflow: auto;
 }
 .btn-group {
   display: flex;
   justify-content: space-between;
-
   margin: 0 100px;
 }
-.layers {
-  position: absolute;
-  top: 0;
-  left: 0;
-  background-color: white;
-  height: 100vh;
-  width: 300px;
-  z-index: 3;
-  .header {
-    background-color: rgb(91, 119, 143);
-  }
-  .tools {
-    height: 40px;
-    .btn-control {
-      margin: 4px;
-    }
-  }
-  .list-layers {
-    .layer {
-      margin: 10px;
-      width: 280px;
-      height: 50px;
-      background-color: aqua;
-      .drag-handle {
-        width: 10px;
-        background-color: aquamarine;
-        &:hover {
-          cursor: n-resize;
-        }
-      }
-      .contents {
-        margin-left: 4px;
-        .name {
-          font-size: 14px;
-        }
-      }
-      .control {
-        .btn-control {
-          margin: 2px;
-        }
-      }
-    }
-  }
-}
-.btn-list-item {
-  &:hover {
-    background-color: #e7e7e7 !important;
-  }
-  min-height: 30px;
+.layer {
+  margin: 0 auto;
+  width: 80%;
+  border-radius: 5px;
+  background-color: bisque;
 }
 </style>
-

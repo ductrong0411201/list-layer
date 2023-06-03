@@ -1,13 +1,15 @@
 class Layer {
   constructor(
     form = {
-      name: "aeroway_fill",
-      type: "fill",
-      source_layer: "aeroway",
-      filter: [],
-      paint: {
-        fill_color: "hsl(230, 29%, 89%)",
-      },
+      name: null,
+      type: null,
+      source_layer: null,
+      metadata: null,
+      minzoom: undefined,
+      maxzoom: undefined,
+      layout: null,
+      filter: null,
+      paint: null,
     }
   ) {
     this.name = form.name;
@@ -15,8 +17,11 @@ class Layer {
     this.filter = form.filter;
     this.layout = form.layout;
     this.paint = form.paint;
-    this.source_Layer = form.source_Layer;
-    this.isLayer = true
+    this.metadata = form.metadata;
+    this.minzoom = form.minzoom;
+    this.maxzoom = form.maxzoom;
+    this.source_layer = form.source_layer;
+    this.isLayer = true;
   }
 }
 

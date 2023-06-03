@@ -1,5 +1,5 @@
 class LayerGroup {
-  constructor(form = { name: "", layers: [] }) {
+  constructor(form = { name: "New Group", layers: [] }) {
     this.name = form.name;
     this.layers = form.layers;
     this.isGroup = true

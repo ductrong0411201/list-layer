@@ -1,9 +1,5 @@
 class LayerList {
   list = [];
-  constructor(layers, groups) {
-    this.layers = layers;
-    this.groups = groups;
-  }
   getList() {
     return this.list;
   }
@@ -12,6 +8,9 @@ class LayerList {
   }
   addLayerGroupToList(group) {
     this.list.push(group);
+  }
+  remove(i) {
+    this.list.splice(i, 1);
   }
 }
 
